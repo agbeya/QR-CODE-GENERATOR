@@ -1,0 +1,21 @@
+# Environnement virtuel
+.venv/
+venv/
+env/
+
+# Sorties générées
+out/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
