@@ -337,16 +337,28 @@ with tab2:
 
     with col_form:
         st.subheader("Informations")
-        vc_prenom   = st.text_input("Prénom",         placeholder="Jean",                    key="vc_prenom")
-        vc_nom      = st.text_input("Nom",             placeholder="Dupont",                  key="vc_nom")
-        vc_email    = st.text_input("Email",           placeholder="jean@exemple.com",        key="vc_email")
-        vc_tel      = st.text_input("Téléphone",       placeholder="+33 6 00 00 00 00",       key="vc_tel")
-        vc_linkedin = st.text_input("LinkedIn",        placeholder="https://linkedin.com/in/…", key="vc_linkedin")
-        vc_x        = st.text_input("X (Twitter)",     placeholder="https://x.com/…",         key="vc_x")
-        vc_site     = st.text_input("Site web",        placeholder="https://…",               key="vc_site")
-        vc_bio      = st.text_area("Bio (quelques mots)",
-                                   placeholder="Développeur passionné par l'IA…",
-                                   max_chars=200, key="vc_bio")
+        _r1a, _r1b = st.columns(2)
+        with _r1a:
+            vc_prenom   = st.text_input("Prénom",     placeholder="Jean",               key="vc_prenom")
+        with _r1b:
+            vc_nom      = st.text_input("Nom",        placeholder="Dupont",             key="vc_nom")
+
+        _r2a, _r2b = st.columns(2)
+        with _r2a:
+            vc_email    = st.text_input("Email",      placeholder="jean@exemple.com",   key="vc_email")
+        with _r2b:
+            vc_tel      = st.text_input("Téléphone",  placeholder="+33 6 00 00 00 00",  key="vc_tel")
+
+        _r3a, _r3b = st.columns(2)
+        with _r3a:
+            vc_linkedin = st.text_input("LinkedIn",   placeholder="https://linkedin.com/in/…", key="vc_linkedin")
+        with _r3b:
+            vc_x        = st.text_input("X (Twitter)", placeholder="https://x.com/…",  key="vc_x")
+
+        vc_site = st.text_input("Site web", placeholder="https://…", key="vc_site")
+        vc_bio  = st.text_area("Bio (quelques mots)",
+                               placeholder="Développeur passionné par l'IA…",
+                               max_chars=200, key="vc_bio")
 
         st.subheader("Logo / Photo")
         vc_logo       = st.file_uploader("Image (optionnel)",
