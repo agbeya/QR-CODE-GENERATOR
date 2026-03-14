@@ -44,8 +44,8 @@ QR_SHAPES = {
     "Barres horizontales": HorizontalBarsDrawer,
 }
 
-SIZE     = 600
-CORNER_R = 24
+SIZE     = 1200   # Haute résolution (vs 600 avant)
+CORNER_R = 48     # Proportionnel à SIZE
 
 
 # ─────────────────────────────────────────────
@@ -65,8 +65,8 @@ def generate_qr(url, logo_file, logo_ratio_pct, qr_color_hex, bg_color_hex,
     # 1. Génération du QR en noir/blanc (toujours fiable, toutes versions)
     qr = qrcode.QRCode(
         error_correction=qrcode.constants.ERROR_CORRECT_H,
-        box_size=10,
-        border=1,
+        box_size=20,  # 20px par module → image native ~2000px, pas d'upscaling flou
+        border=2,
     )
     qr.add_data(url)
     qr.make(fit=True)
