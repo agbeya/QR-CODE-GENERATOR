@@ -280,12 +280,16 @@ with tab1:
         logo_ratio = st.slider("Taille du logo (% du QR)", 10, 35, 22, 1, key="logo_ratio_tab1")
 
         st.subheader("Personnalisation")
-        qr_shape   = st.selectbox("Forme des modules",     list(QR_SHAPES.keys()),
-                                  index=1, key="shape_tab1")
-        eye_frame  = st.selectbox("Contour des marqueurs", list(EYE_FRAME_SHAPES.keys()),
-                                  index=0, key="eye_frame_tab1")
-        eye_center = st.selectbox("Centre des marqueurs",  list(EYE_CENTER_SHAPES.keys()),
-                                  index=0, key="eye_center_tab1")
+        _s1, _s2, _s3 = st.columns(3)
+        with _s1:
+            qr_shape   = st.selectbox("Forme des modules",     list(QR_SHAPES.keys()),
+                                      index=1, key="shape_tab1")
+        with _s2:
+            eye_frame  = st.selectbox("Contour des marqueurs", list(EYE_FRAME_SHAPES.keys()),
+                                      index=0, key="eye_frame_tab1")
+        with _s3:
+            eye_center = st.selectbox("Centre des marqueurs",  list(EYE_CENTER_SHAPES.keys()),
+                                      index=0, key="eye_center_tab1")
 
         c1, c2 = st.columns(2)
         with c1:
@@ -366,12 +370,16 @@ with tab2:
         vc_logo_ratio = st.slider("Taille du logo (% du QR)", 10, 35, 22, 1, key="vc_logo_ratio")
 
         st.subheader("Personnalisation")
-        vc_qr_shape   = st.selectbox("Forme des modules", list(QR_SHAPES.keys()),
-                                     index=1, key="vc_shape")
-        vc_eye_frame  = st.selectbox("Contour des marqueurs", list(EYE_FRAME_SHAPES.keys()),
-                                     index=0, key="vc_eye_frame")
-        vc_eye_center = st.selectbox("Centre des marqueurs",  list(EYE_CENTER_SHAPES.keys()),
-                                     index=0, key="vc_eye_center")
+        _vs1, _vs2, _vs3 = st.columns(3)
+        with _vs1:
+            vc_qr_shape   = st.selectbox("Forme des modules",     list(QR_SHAPES.keys()),
+                                         index=1, key="vc_shape")
+        with _vs2:
+            vc_eye_frame  = st.selectbox("Contour des marqueurs", list(EYE_FRAME_SHAPES.keys()),
+                                         index=0, key="vc_eye_frame")
+        with _vs3:
+            vc_eye_center = st.selectbox("Centre des marqueurs",  list(EYE_CENTER_SHAPES.keys()),
+                                         index=0, key="vc_eye_center")
 
         c1, c2 = st.columns(2)
         with c1:
