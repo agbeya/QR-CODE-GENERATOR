@@ -11,7 +11,6 @@ Lancement :
 import io
 from datetime import datetime
 
-import svgwrite
 import qrcode
 from qrcode.image.styledpil import StyledPilImage
 from qrcode.image.styles.moduledrawers.pil import (
@@ -196,124 +195,234 @@ def generate_qr(url, logo_file, logo_ratio_pct, qr_color_hex, bg_color_hex,
 
 
 # ─────────────────────────────────────────────
-# LAYOUT : gauche = paramètres | droite = résultat
+# HELPER — boutons de téléchargement (réutilisable)
 # ─────────────────────────────────────────────
-col_left, col_right = st.columns([1, 1], gap="large")
-
-with col_left:
-    st.subheader("Contenu")
-    url = st.text_input(
-        "Texte ou lien à encoder",
-        value="",
-        placeholder="https://",
+def render_download_buttons(img: Image.Image, prefix: str) -> None:
+    """Affiche le slider de taille + 4 boutons de téléchargement."""
+    import base64
+    export_size = st.select_slider(
+        "Taille de l'export",
+        options=[200, 300, 400, 500, 600, 700, 800, 900, 1000,
+                 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000],
+        value=600,
+        format_func=lambda v: f"{v} × {v} px",
+        key=f"export_size_{prefix}",
     )
+    export_img = img.resize((export_size, export_size), Image.LANCZOS)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    st.subheader("Logo")
-    logo_file  = st.file_uploader("Charger un logo (optionnel)", type=["png","jpg","jpeg","webp"])
-    logo_ratio = st.slider("Taille du logo (% du QR)", 10, 35, 22, 1)
+    buf_png = io.BytesIO()
+    export_img.save(buf_png, format="PNG", dpi=(300, 300))
+    buf_png.seek(0)
 
-    st.subheader("Personnalisation")
-    qr_shape   = st.selectbox("Forme des modules",     list(QR_SHAPES.keys()),        index=1)
-    eye_frame  = st.selectbox("Contour des marqueurs", list(EYE_FRAME_SHAPES.keys()),  index=0)
-    eye_center = st.selectbox("Centre des marqueurs",  list(EYE_CENTER_SHAPES.keys()), index=0)
+    buf_jpg = io.BytesIO()
+    export_img.convert("RGB").save(buf_jpg, format="JPEG", quality=95, dpi=(300, 300))
+    buf_jpg.seek(0)
 
-    c1, c2 = st.columns(2)
-    with c1:
-        qr_color = st.color_picker("Couleur QR", "#000000")
-    with c2:
-        bg_color = st.color_picker("Couleur fond", "#FFFFFF")
+    buf_pdf = io.BytesIO()
+    export_img.convert("RGB").save(buf_pdf, format="PDF", resolution=300)
+    buf_pdf.seek(0)
 
-    generate = st.button("Générer le QR Code", type="primary", use_container_width=True)
+    png_b64 = base64.b64encode(buf_png.getvalue()).decode()
+    buf_png.seek(0)
+    svg_content = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" '
+        f'width="{export_size}" height="{export_size}">'
+        f'<image href="data:image/png;base64,{png_b64}" '
+        f'width="{export_size}" height="{export_size}"/>'
+        f'</svg>'
+    )
+    buf_svg = io.BytesIO(svg_content.encode())
+
+    dl1, dl2, dl3, dl4 = st.columns(4)
+    with dl1:
+        st.download_button("⬇ PNG", data=buf_png, file_name=f"{prefix}_{ts}.png",
+                           mime="image/png", use_container_width=True, type="primary",
+                           key=f"dl_png_{prefix}")
+    with dl2:
+        st.download_button("⬇ JPG", data=buf_jpg, file_name=f"{prefix}_{ts}.jpg",
+                           mime="image/jpeg", use_container_width=True, type="primary",
+                           key=f"dl_jpg_{prefix}")
+    with dl3:
+        st.download_button("⬇ SVG", data=buf_svg, file_name=f"{prefix}_{ts}.svg",
+                           mime="image/svg+xml", use_container_width=True, type="primary",
+                           key=f"dl_svg_{prefix}")
+    with dl4:
+        st.download_button("⬇ PDF", data=buf_pdf, file_name=f"{prefix}_{ts}.pdf",
+                           mime="application/pdf", use_container_width=True, type="primary",
+                           key=f"dl_pdf_{prefix}")
+
 
 # ─────────────────────────────────────────────
-# GÉNÉRATION
+# LAYOUT — deux onglets
 # ─────────────────────────────────────────────
-with col_right:
-    st.subheader("Résultat")
+tab1, tab2 = st.tabs(["🔗  QR Code URL / Texte", "💼  Carte de visite pro"])
 
-    if generate:
-        if not url.strip():
-            st.error("Veuillez saisir un texte ou un lien.")
+
+# ══════════════════════════════════════════════
+# ONGLET 1 — QR Code classique
+# ══════════════════════════════════════════════
+with tab1:
+    col_left, col_right = st.columns([1, 1], gap="large")
+
+    with col_left:
+        st.subheader("Contenu")
+        url = st.text_input(
+            "Texte ou lien à encoder",
+            value="",
+            placeholder="https://",
+            key="url_tab1",
+        )
+
+        st.subheader("Logo")
+        logo_file  = st.file_uploader("Charger un logo (optionnel)",
+                                      type=["png","jpg","jpeg","webp"], key="logo_tab1")
+        logo_ratio = st.slider("Taille du logo (% du QR)", 10, 35, 22, 1, key="logo_ratio_tab1")
+
+        st.subheader("Personnalisation")
+        qr_shape   = st.selectbox("Forme des modules",     list(QR_SHAPES.keys()),
+                                  index=1, key="shape_tab1")
+        eye_frame  = st.selectbox("Contour des marqueurs", list(EYE_FRAME_SHAPES.keys()),
+                                  index=0, key="eye_frame_tab1")
+        eye_center = st.selectbox("Centre des marqueurs",  list(EYE_CENTER_SHAPES.keys()),
+                                  index=0, key="eye_center_tab1")
+
+        c1, c2 = st.columns(2)
+        with c1:
+            qr_color = st.color_picker("Couleur QR",   "#000000", key="qr_color_tab1")
+        with c2:
+            bg_color = st.color_picker("Couleur fond", "#FFFFFF",  key="bg_color_tab1")
+
+        generate = st.button("Générer le QR Code", type="primary",
+                             use_container_width=True, key="gen_tab1")
+
+    with col_right:
+        st.subheader("Résultat")
+
+        if generate:
+            if not url.strip():
+                st.error("Veuillez saisir un texte ou un lien.")
+            else:
+                with st.spinner("Génération..."):
+                    try:
+                        img = generate_qr(
+                            url=url,
+                            logo_file=logo_file,
+                            logo_ratio_pct=logo_ratio,
+                            qr_color_hex=qr_color,
+                            bg_color_hex=bg_color,
+                            module_drawer_cls=QR_SHAPES[qr_shape],
+                            eye_frame_shape=EYE_FRAME_SHAPES[eye_frame],
+                            eye_center_shape=EYE_CENTER_SHAPES[eye_center],
+                        )
+                        st.session_state["qr_img"] = img
+                    except Exception as e:
+                        st.error(f"Erreur : {e}")
+
+        if "qr_img" in st.session_state:
+            img = st.session_state["qr_img"]
+            col_pad1, col_img, col_pad2 = st.columns([1, 2, 1])
+            with col_img:
+                st.image(img, use_container_width=True)
+            render_download_buttons(img, "QR")
         else:
-            with st.spinner("Génération..."):
-                try:
-                    img = generate_qr(
-                        url=url,
-                        logo_file=logo_file,
-                        logo_ratio_pct=logo_ratio,
-                        qr_color_hex=qr_color,
-                        bg_color_hex=bg_color,
-                        module_drawer_cls=QR_SHAPES[qr_shape],
-                        eye_frame_shape=EYE_FRAME_SHAPES[eye_frame],
-                        eye_center_shape=EYE_CENTER_SHAPES[eye_center],
-                    )
-                    st.session_state["qr_img"] = img
+            st.info("Le QR code apparaîtra ici après génération.")
 
-                except Exception as e:
-                    st.error(f"Erreur : {e}")
 
-    if "qr_img" in st.session_state:
-        img = st.session_state["qr_img"]
-        col_pad1, col_img, col_pad2 = st.columns([1, 2, 1])
-        with col_img:
-            st.image(img, use_container_width=True)
+# ══════════════════════════════════════════════
+# ONGLET 2 — Carte de visite (vCard 3.0)
+# ══════════════════════════════════════════════
+with tab2:
+    col_form, col_preview = st.columns([1, 1], gap="large")
 
-        # ── Choix de la taille d'export ──
-        export_size = st.select_slider(
-            "Taille de l'export",
-            options=[200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000],
-            value=600,
-            format_func=lambda v: f"{v} × {v} px",
-        )
+    with col_form:
+        st.subheader("Informations")
+        vc_prenom   = st.text_input("Prénom",         placeholder="Jean",                    key="vc_prenom")
+        vc_nom      = st.text_input("Nom",             placeholder="Dupont",                  key="vc_nom")
+        vc_email    = st.text_input("Email",           placeholder="jean@exemple.com",        key="vc_email")
+        vc_tel      = st.text_input("Téléphone",       placeholder="+33 6 00 00 00 00",       key="vc_tel")
+        vc_linkedin = st.text_input("LinkedIn",        placeholder="https://linkedin.com/in/…", key="vc_linkedin")
+        vc_x        = st.text_input("X (Twitter)",     placeholder="https://x.com/…",         key="vc_x")
+        vc_site     = st.text_input("Site web",        placeholder="https://…",               key="vc_site")
+        vc_bio      = st.text_area("Bio (quelques mots)",
+                                   placeholder="Développeur passionné par l'IA…",
+                                   max_chars=200, key="vc_bio")
 
-        # ── Prépare l'image à la taille choisie ──
-        export_img = img.resize((export_size, export_size), Image.LANCZOS)
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        st.subheader("Logo / Photo")
+        vc_logo       = st.file_uploader("Image (optionnel)",
+                                         type=["png","jpg","jpeg","webp"], key="vc_logo")
+        vc_logo_ratio = st.slider("Taille du logo (% du QR)", 10, 35, 22, 1, key="vc_logo_ratio")
 
-        # PNG
-        buf_png = io.BytesIO()
-        export_img.save(buf_png, format="PNG", dpi=(300, 300))
-        buf_png.seek(0)
+        st.subheader("Personnalisation")
+        vc_qr_shape   = st.selectbox("Forme des modules", list(QR_SHAPES.keys()),
+                                     index=1, key="vc_shape")
+        vc_eye_frame  = st.selectbox("Contour des marqueurs", list(EYE_FRAME_SHAPES.keys()),
+                                     index=0, key="vc_eye_frame")
+        vc_eye_center = st.selectbox("Centre des marqueurs",  list(EYE_CENTER_SHAPES.keys()),
+                                     index=0, key="vc_eye_center")
 
-        # JPG
-        buf_jpg = io.BytesIO()
-        export_img.convert("RGB").save(buf_jpg, format="JPEG", quality=95, dpi=(300, 300))
-        buf_jpg.seek(0)
+        c1, c2 = st.columns(2)
+        with c1:
+            vc_qr_color = st.color_picker("Couleur QR",   "#1A3C5E", key="vc_qr_color")
+        with c2:
+            vc_bg_color = st.color_picker("Couleur fond", "#FFFFFF",  key="vc_bg_color")
 
-        # PDF
-        buf_pdf = io.BytesIO()
-        export_img.convert("RGB").save(buf_pdf, format="PDF", resolution=300)
-        buf_pdf.seek(0)
+        gen_vcard = st.button("Générer la carte de visite", type="primary",
+                              use_container_width=True, key="gen_vcard")
 
-        # SVG (embed PNG en base64)
-        import base64
-        png_b64 = base64.b64encode(buf_png.getvalue()).decode()
-        buf_png.seek(0)
-        svg_content = (
-            f'<svg xmlns="http://www.w3.org/2000/svg" '
-            f'width="{export_size}" height="{export_size}">'
-            f'<image href="data:image/png;base64,{png_b64}" '
-            f'width="{export_size}" height="{export_size}"/>'
-            f'</svg>'
-        )
-        buf_svg = io.BytesIO(svg_content.encode())
+    with col_preview:
+        st.subheader("Résultat")
 
-        # ── 4 boutons sur la même ligne ──
-        dl1, dl2, dl3, dl4 = st.columns(4)
-        with dl1:
-            st.download_button("⬇ PNG", data=buf_png, file_name=f"QR_{ts}.png",
-                               mime="image/png", use_container_width=True, type="primary")
-        with dl2:
-            st.download_button("⬇ JPG", data=buf_jpg, file_name=f"QR_{ts}.jpg",
-                               mime="image/jpeg", use_container_width=True, type="primary")
-        with dl3:
-            st.download_button("⬇ SVG", data=buf_svg, file_name=f"QR_{ts}.svg",
-                               mime="image/svg+xml", use_container_width=True, type="primary")
-        with dl4:
-            st.download_button("⬇ PDF", data=buf_pdf, file_name=f"QR_{ts}.pdf",
-                               mime="application/pdf", use_container_width=True, type="primary")
-    else:
-        st.info("Le QR code apparaîtra ici après génération.")
+        if gen_vcard:
+            if not vc_prenom.strip() and not vc_nom.strip():
+                st.error("Veuillez saisir au moins un prénom ou un nom.")
+            else:
+                lines = [
+                    "BEGIN:VCARD",
+                    "VERSION:3.0",
+                    f"N:{vc_nom.strip()};{vc_prenom.strip()};;;",
+                    f"FN:{(vc_prenom.strip() + ' ' + vc_nom.strip()).strip()}",
+                ]
+                if vc_email.strip():
+                    lines.append(f"EMAIL:{vc_email.strip()}")
+                if vc_tel.strip():
+                    lines.append(f"TEL:{vc_tel.strip()}")
+                if vc_site.strip():
+                    lines.append(f"URL:{vc_site.strip()}")
+                if vc_linkedin.strip():
+                    lines.append(f"X-SOCIALPROFILE;type=linkedin:{vc_linkedin.strip()}")
+                if vc_x.strip():
+                    lines.append(f"X-SOCIALPROFILE;type=twitter:{vc_x.strip()}")
+                if vc_bio.strip():
+                    lines.append(f"NOTE:{vc_bio.strip()}")
+                lines.append("END:VCARD")
+                vcard_str = "\r\n".join(lines)
+
+                with st.spinner("Génération..."):
+                    try:
+                        img_vc = generate_qr(
+                            url=vcard_str,
+                            logo_file=vc_logo,
+                            logo_ratio_pct=vc_logo_ratio,
+                            qr_color_hex=vc_qr_color,
+                            bg_color_hex=vc_bg_color,
+                            module_drawer_cls=QR_SHAPES[vc_qr_shape],
+                            eye_frame_shape=EYE_FRAME_SHAPES[vc_eye_frame],
+                            eye_center_shape=EYE_CENTER_SHAPES[vc_eye_center],
+                        )
+                        st.session_state["qr_vcard"] = img_vc
+                    except Exception as e:
+                        st.error(f"Erreur : {e}")
+
+        if "qr_vcard" in st.session_state:
+            img_vc = st.session_state["qr_vcard"]
+            col_pad1, col_img, col_pad2 = st.columns([1, 2, 1])
+            with col_img:
+                st.image(img_vc, use_container_width=True)
+            render_download_buttons(img_vc, "vcard")
+        else:
+            st.info("Le QR code de votre carte de visite apparaîtra ici.")
+
 
 # ─────────────────────────────────────────────
 # COPYRIGHT
